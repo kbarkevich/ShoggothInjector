@@ -5,7 +5,7 @@ An HPL2 code injector, for all your fancy Amnesia modding needs.
 *This project is in ALPHA. It is not intended to be used in actual custom stories in its current state- as a consequence, the following instructions are for how to run the test file to ensure that the Injector works on your machine.*
 
 ### Preparing your Custom Story
-1) Into your map *.hps* file, copy the contents of *template.hps*
+1) Into your map *.hps* file, copy the contents of *templates/template.hps*
 2) Insert your own HLP script into the section labeled "YOUR MAP CODE."
 3) Create injectable variables using:
 * SetGlobalVarInt - *Global Integers*

@@ -1,0 +1,62 @@
+// vvvvvvvvvv -- YOUR MAP CODE -- vvvvvvvvvv
+
+
+
+// ^^^^^^^^^^ -- END YOUR MAP CODE -- ^^^^^^^^^^
+// vvvvvvvvvv -- SI CODE -- vvvvvvvvvv
+
+const string _SI_PREFIX = "_SI_";
+const string _SI_FLOATD_SUFFIX = "_D";
+const string _SI_FLOATW_SUFFIX = "_W";
+
+// substr should be one character
+int IndexOf(string &str, string &substr)
+{
+	int count = 0;
+	while (count < str.length())
+	{
+		if (StringSub(str, count, 1) == StringSub(substr, 0, 1))
+		{
+			return count;
+		}
+		count = count + 1;
+	}
+	return -1;
+}
+
+
+void SetGlobalSIFloat (string &asName, float afVal)
+{
+	string afValStr = ""+afVal;
+	int decindex = IndexOf(afValStr, ".");
+	string _wstr = StringSub(afValStr, 0, decindex);
+	string _dstr;
+	if (decindex != -1 && decindex < afValStr.length() - 1)
+	{
+		_dstr = StringSub(afValStr, decindex + 1, afValStr.length() - decindex - 1);
+	}
+	else
+	{
+		_dstr = "0";
+	}
+	AddDebugMessage(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX + ": " + StringToInt(_wstr), false);
+	SetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX, StringToInt(_wstr));
+	AddDebugMessage(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX + ": " + StringToInt(_dstr), false);
+	SetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX, StringToInt(_dstr));
+}
+void AddGlobalSIFloat (string &asName, float afVal)
+{
+	float val = GetGlobalSIFloat(asName);
+	AddDebugMessage(val + " + " + afVal + " = " + (val + afVal), false);
+	val = val + afVal;
+	SetGlobalSIFloat(asName, val);
+}
+float GetGlobalSIFloat (string &asName)
+{
+	string _wstr = ""+GetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX);
+	string _dstr = ""+GetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX);
+	AddDebugMessage("Fetched SI float:" + _wstr + "." + _dstr, false);
+	return StringToFloat(_wstr+"."+_dstr);
+}
+
+// ^^^^^^^^^^ -- END SI CODE -- ^^^^^^^^^^
