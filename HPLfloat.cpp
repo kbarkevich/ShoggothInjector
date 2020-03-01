@@ -102,3 +102,29 @@ bool HPLfloat::IsIt(u_int addr, string name, HANDLE* proc)
 	else
 		return false;
 }
+
+map<string, HPLfloat*> HPLfloat::GetHPLFloats(vector<string> patterns, MemSearch* memSearch)
+{
+	map<string, HPLfloat*> HPLfloats;
+	map<string, future<HPLfloat*>> futures;
+	ctpl::thread_pool pool(8);
+	for (int i = 0; i < patterns.size(); i++)
+	{
+		string pattern = patterns[i];
+		futures[pattern] = pool.push([pattern, memSearch]
+		(int id)
+			{
+				return new HPLfloat(pattern, memSearch);
+			});
+	}
+	pool.stop(true);
+	for (int i = 0; i < patterns.size(); i++)
+	{
+		HPLfloats[patterns[i]] = futures[patterns[i]].get();
+		if (HPLfloats[patterns[i]]->exists())
+			cout << "HPL float " << patterns[i] << " exists! Value: " << HPLfloats[patterns[i]]->GetVal() << endl;
+		else
+			cout << "HPL float " << patterns[i] << " does not exist..." << endl;
+	}
+	return HPLfloats;
+}

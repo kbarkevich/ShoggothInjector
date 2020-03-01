@@ -23,7 +23,6 @@ void HPLint::SetVal(int val)
 {
 	if (_addr == 0)
 		return;
-	//u_int location = _addr + _name.length() + ((2 * DWORD_LEN) - ((_addr + _name.length()) % (2 * DWORD_LEN))) + 4 * DWORD_LEN;
 	u_int location = _addr + 28;
 	int stat = _memSearch->WriteStringAt(location, to_string(val));
 	if (stat > 0)
@@ -58,4 +57,30 @@ bool HPLint::IsIt(u_int addr, string name, HANDLE* proc)
 		return true;
 	else
 		return false;
+}
+
+map<string, HPLint*> HPLint::GetHPLints(vector<string> patterns, MemSearch* memSearch)
+{
+	map<string, HPLint*> HPLints;
+	map<string, future<HPLint*>> futures;
+	ctpl::thread_pool pool(8);
+	for (int i = 0; i < patterns.size(); i++)
+	{
+		string pattern = patterns[i];
+		futures[pattern] = pool.push([pattern, memSearch]
+		(int id)
+			{
+				return new HPLint(pattern, memSearch);
+			});
+	}
+	pool.stop(true);
+	for (int i = 0; i < patterns.size(); i++)
+	{
+		HPLints[patterns[i]] = futures[patterns[i]].get();
+		if (HPLints[patterns[i]]->exists())
+			cout << "HPL int " << patterns[i] << " exists! Value: " << HPLints[patterns[i]]->GetVal() << endl;
+		else
+			cout << "HPL int " << patterns[i] << " does not exist..." << endl;
+	}
+	return HPLints;
 }

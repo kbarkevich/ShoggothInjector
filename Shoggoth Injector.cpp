@@ -4,12 +4,15 @@
 #include <iostream>
 #include <thread>
 #include <map>
-#include "lib/CTPL/ctpl_stl.h"
+#include "MemSearch.h"
 #include "HPLint.h"
 #include "HPLfloat.h"
 
+void test1(map<string, HPLint*> HPLints, map<string, HPLfloat*> HPLfloats);
+
 int main()
 {
+    // Open Amnesia window and hook into process
     char win_name[100];
     cout << "Enter name of Amnesia window, including whitespace: ";
     cin.getline(win_name, sizeof(win_name));
@@ -18,93 +21,78 @@ int main()
     if (hWnd == 0)
     {
         cout << "Whoops, could not find that window!" << endl;
+        return 1;
     }
-    else
+    DWORD PID;
+    GetWindowThreadProcessId(hWnd, &PID);
+    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, false, PID);
+    if (!hProc)
     {
-        DWORD PID;
-        GetWindowThreadProcessId(hWnd, &PID);
-        HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, false, PID);
-        if (!hProc)
+        cerr << "Cannot open that process." << endl;
+        return 1;
+    }
+
+    // Initialize memory searcher
+    MemSearch* memSearch = new MemSearch(&hProc);
+
+    // Get names of all integers to hook into
+    string pattern;
+    vector<string> floatNames;
+    cout << "Enter string patterns to find HPL floats in memory (or nothing to stop): ";
+    while (getline(std::cin, pattern))
+    {
+        if (pattern.empty())
+            break;
+        floatNames.push_back(pattern);
+    }
+    cout << "Getting floats......" << endl;
+    map<string, HPLfloat*> HPLfloats = HPLfloat::GetHPLFloats(floatNames, memSearch);
+
+    // Get names of all floats to hook into
+    vector<string> intNames;
+    cout << "Enter string patterns to find HPL integers in memory (or nothing to stop): ";
+    while (getline(std::cin, pattern))
+    {
+        if (pattern.empty())
+            break;
+        intNames.push_back(pattern);
+    }
+    cout << "Getting ints......" << endl;
+    map<string, HPLint*> HPLints = HPLint::GetHPLints(intNames, memSearch);
+
+    // RUN TESTS HERE
+    test1(HPLints, HPLfloats);
+
+    CloseHandle(hProc);
+    cout << "Press Enter To Exit" << endl;
+    cin.get();
+}
+
+/*
+    Test 1: Add a value to all ints in a loop.
+*/
+void test1(map<string, HPLint*> HPLints, map<string, HPLfloat*> HPLfloats)
+{
+    cout << "How many to add to the ints per loop: ";
+    int spawnCount = 0;
+    cin >> spawnCount;
+    cout << endl << "How many loops to do: ";
+    int loopCount = 0;
+    cin >> loopCount;
+    cout << endl << "And finally, how long (in ms) between each pass of the loop: ";
+    int msDelay = 0;
+    cin >> msDelay;
+    for (int i = 5; i > 0; i--)
+    {
+        cout << "Starting in " << i << "..." << endl;
+        this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    for (int i = 0; i < loopCount; i++)
+    {
+        for (map<string, HPLint*>::iterator iter = HPLints.begin(); iter != HPLints.end(); ++iter)
         {
-            cerr << "Cannot open that process." << endl;
+            iter->second->SetVal(spawnCount);
         }
-        else
-        {
-            MemSearch* memSearch = new MemSearch(&hProc);
-            vector<string> patterns;
-            string pattern;
-            cout << "Enter string patterns to find in memory (or nothing to stop): ";
-            while (getline(std::cin, pattern))
-            {
-                if (pattern.empty())
-                    break;
-                patterns.push_back(pattern);
-            }
-
-            map<string, HPLfloat*> HPLfloats;
-            map<string, future<HPLfloat*>> futures;
-            ctpl::thread_pool pool(8);
-            for (int i = 0; i < patterns.size(); i++)
-            {
-                string pattern = patterns[i];
-                futures[pattern] = pool.push([pattern, memSearch]
-                    (int id)
-                    {
-                        cout << endl << "Finding instance of \"" << pattern << "\"" << endl;
-                        return new HPLfloat(pattern, memSearch); 
-                    });
-            }
-            pool.stop(true);
-            for (int i = 0; i < patterns.size(); i++)
-            {
-                HPLfloats[patterns[i]] = futures[patterns[i]].get();
-                if (HPLfloats[patterns[i]]->exists())
-                    cout << "HPL float " << patterns[i] << " exists!" << endl;
-                else
-                    cout << "HPL float " << patterns[i] << " does not exist..." << endl;
-            }
-
-            cin.get();
-            return 0;
-
-            string stdpattern(pattern);
-            /* UNCOMMENT TO USE AN INT INSTEAD
-            HPLint *hplint = new HPLint(stdpattern, memSearch);
-            if (hplint->exists())
-                cout << "It exists: Address: " << hex << hplint->GetAddr() << "; Value: " << dec << hplint->GetVal() << endl;
-            else
-                cout << "Variable does not exist..." << endl;
-            */
-            HPLfloat* hplfloat = new HPLfloat(stdpattern, memSearch);
-            if (hplfloat->exists())
-                cout << "It exists!" << endl;
-            cout << "WAddress: " << hex << hplfloat->GetWAddr() << endl;
-            cout << "DAddress: " << hex << hplfloat->GetDAddr() << endl;
-            cout << "Value: " << hplfloat->GetVal() << endl;
-            cout << "How many to add per loop: ";
-            int spawnCount = 0;
-            cin >> spawnCount;
-            cout << endl << "How many loops to do: ";
-            int loopCount = 0;
-            cin >> loopCount;
-            cout << endl << "And finally, how long (in ms) between each pass of the loop: ";
-            int msDelay = 0;
-            cin >> msDelay;
-            for (int i = 5; i > 0; i--)
-            {
-                cout << "Starting in " << i << "..." << endl;
-                this_thread::sleep_for(std::chrono::seconds(1));
-            }
-            for (int i = 0; i < loopCount; i++)
-            {
-                //hplint->SetVal(spawnCount); UNCOMMENT TO USE AN INT INSTEAD
-                hplfloat->SetVal(spawnCount * 0.1f);
-                this_thread::sleep_for(std::chrono::milliseconds(msDelay));
-            }
-
-            CloseHandle(hProc);
-            cout << "Press Enter To Exit" << endl;
-            cin.get();
-        }
+        this_thread::sleep_for(std::chrono::milliseconds(msDelay));
     }
 }
