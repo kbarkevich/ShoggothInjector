@@ -12,6 +12,7 @@ public:
 	HPLfloat(std::string name, MemSearch* memSearch);
 	float GetVal();
 	void SetVal(float val);
+	// Does the variable exist in Amnesia memory?
 	bool exists();
 	u_int GetWAddr();
 	u_int GetDAddr();

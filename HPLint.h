@@ -14,6 +14,7 @@ public:
 	HPLint(std::string name, MemSearch *memSearch);
 	int GetVal();
 	void SetVal(int val);
+	// Does the variable exist in Amnesia memory?
 	bool exists();
 	u_int GetAddr();
 	static bool IsIt(u_int, string, HANDLE*);

@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <thread>
+#include <map>
+#include "lib/CTPL/ctpl_stl.h"
 #include "HPLint.h"
 #include "HPLfloat.h"
 
@@ -29,10 +31,42 @@ int main()
         else
         {
             MemSearch* memSearch = new MemSearch(&hProc);
-            char pattern[100];
-            cout << "Enter string pattern to find in memory: ";
-            cin.getline(pattern, sizeof(pattern));
-            cout << endl << "Finding instance of \"" << pattern << "\"" << endl;
+            vector<string> patterns;
+            string pattern;
+            cout << "Enter string patterns to find in memory (or nothing to stop): ";
+            while (getline(std::cin, pattern))
+            {
+                if (pattern.empty())
+                    break;
+                patterns.push_back(pattern);
+            }
+
+            map<string, HPLfloat*> HPLfloats;
+            map<string, future<HPLfloat*>> futures;
+            ctpl::thread_pool pool(8);
+            for (int i = 0; i < patterns.size(); i++)
+            {
+                string pattern = patterns[i];
+                futures[pattern] = pool.push([pattern, memSearch]
+                    (int id)
+                    {
+                        cout << endl << "Finding instance of \"" << pattern << "\"" << endl;
+                        return new HPLfloat(pattern, memSearch); 
+                    });
+            }
+            pool.stop(true);
+            for (int i = 0; i < patterns.size(); i++)
+            {
+                HPLfloats[patterns[i]] = futures[patterns[i]].get();
+                if (HPLfloats[patterns[i]]->exists())
+                    cout << "HPL float " << patterns[i] << " exists!" << endl;
+                else
+                    cout << "HPL float " << patterns[i] << " does not exist..." << endl;
+            }
+
+            cin.get();
+            return 0;
+
             string stdpattern(pattern);
             /* UNCOMMENT TO USE AN INT INSTEAD
             HPLint *hplint = new HPLint(stdpattern, memSearch);
@@ -61,7 +95,6 @@ int main()
                 cout << "Starting in " << i << "..." << endl;
                 this_thread::sleep_for(std::chrono::seconds(1));
             }
-
             for (int i = 0; i < loopCount; i++)
             {
                 //hplint->SetVal(spawnCount); UNCOMMENT TO USE AN INT INSTEAD

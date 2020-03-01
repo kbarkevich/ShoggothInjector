@@ -1,4 +1,6 @@
 .vs
+lib
+Debug
 *.vcxproj
 *.filters
 *.user
