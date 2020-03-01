@@ -6,7 +6,7 @@ using namespace std;
 class HPLfloat : public HPLvar
 {
 public:
-	const string _SI_PREFIX = "_SI_";
+	const string _SI_PREFIX = "_";
 	const string _SI_FLOATD_SUFFIX = "_D";
 	const string _SI_FLOATW_SUFFIX = "_W";
 	HPLfloat(std::string name, MemSearch* memSearch);
