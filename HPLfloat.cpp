@@ -27,6 +27,7 @@ float HPLfloat::GetVal()
 	u_int dlocation = _addr_d + 28;
 	string wvalue = _memSearch->GetStringAt(wlocation);
 	string dvalue = _memSearch->GetStringAt(dlocation);
+	reverse(dvalue.begin(), dvalue.end());
 	float result = strtof((wvalue + "." + dvalue).c_str(), nullptr);
 	return result;
 }
@@ -52,7 +53,7 @@ void HPLfloat::SetVal(float val)
 		wstr = valstr;
 		dstr = "0";
 	}
-
+	reverse(dstr.begin(), dstr.end());
 	int stat = _memSearch->WriteStringAt(wlocation, wstr);
 	if (stat > 0)
 	{
