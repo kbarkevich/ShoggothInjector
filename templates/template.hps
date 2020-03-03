@@ -5,7 +5,7 @@
 // ^^^^^^^^^^ -- END YOUR MAP CODE -- ^^^^^^^^^^
 // vvvvvvvvvv -- SI CODE -- vvvvvvvvvv
 
-const string _SI_PREFIX = "_SI_";
+const string _SI_PREFIX = "_";
 const string _SI_FLOATD_SUFFIX = "_D";
 const string _SI_FLOATW_SUFFIX = "_W";
 
@@ -24,8 +24,39 @@ int IndexOf(string &str, string &substr)
 	return -1;
 }
 
+string ReverseString(string &rstr)
+{
+	string str;
+	for (int i = rstr.length() - 1; i >= 0; i = i - 1)
+	{
+		str = str + StringSub(rstr, i, 1);
+	}
+	return str;
+}
+
 
 void SetGlobalSIFloat (string &asName, float afVal)
+{
+	AddDebugMessage("Setting " + asName + " to " + afVal, false);
+	string afValStr = ""+afVal;
+	int decindex = IndexOf(afValStr, ".");
+	string _wstr = StringSub(afValStr, 0, decindex);
+	string _dstr;
+	if (decindex != -1 && decindex < afValStr.length() - 1)
+	{
+		_dstr = StringSub(afValStr, decindex + 1, afValStr.length() - decindex - 1);
+	}
+	else
+	{
+		_dstr = "0";
+	}
+	_dstr = ReverseString(_dstr);
+	AddDebugMessage(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX + ": " + StringToInt(_wstr), false);
+	SetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX, StringToInt(_wstr));
+	AddDebugMessage(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX + ": " + StringToInt(_dstr), false);
+	SetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX, StringToInt(_dstr));
+}
+void SetLocalSIFloat (string &asName, float afVal)
 {
 	string afValStr = ""+afVal;
 	int decindex = IndexOf(afValStr, ".");
@@ -39,11 +70,13 @@ void SetGlobalSIFloat (string &asName, float afVal)
 	{
 		_dstr = "0";
 	}
+	_dstr = ReverseString(_dstr);
 	AddDebugMessage(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX + ": " + StringToInt(_wstr), false);
-	SetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX, StringToInt(_wstr));
+	SetLocalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX, StringToInt(_wstr));
 	AddDebugMessage(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX + ": " + StringToInt(_dstr), false);
-	SetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX, StringToInt(_dstr));
+	SetLocalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX, StringToInt(_dstr));
 }
+
 void AddGlobalSIFloat (string &asName, float afVal)
 {
 	float val = GetGlobalSIFloat(asName);
@@ -51,10 +84,25 @@ void AddGlobalSIFloat (string &asName, float afVal)
 	val = val + afVal;
 	SetGlobalSIFloat(asName, val);
 }
+void AddLocalSIFloat (string &asName, float afVal)
+{
+	float val = GetLocalSIFloat(asName);
+	AddDebugMessage(val + " + " + afVal + " = " + (val + afVal), false);
+	val = val + afVal;
+	SetLocalSIFloat(asName, val);
+}
+
 float GetGlobalSIFloat (string &asName)
 {
 	string _wstr = ""+GetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX);
-	string _dstr = ""+GetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX);
+	string _dstr = ReverseString(""+GetGlobalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX));
+	AddDebugMessage("Fetched SI float:" + _wstr + "." + _dstr, false);
+	return StringToFloat(_wstr+"."+_dstr);
+}
+float GetLocalSIFloat (string &asName)
+{
+	string _wstr = ""+GetLocalVarInt(_SI_PREFIX+asName+_SI_FLOATW_SUFFIX);
+	string _dstr = ReverseString(""+GetLocalVarInt(_SI_PREFIX+asName+_SI_FLOATD_SUFFIX));
 	AddDebugMessage("Fetched SI float:" + _wstr + "." + _dstr, false);
 	return StringToFloat(_wstr+"."+_dstr);
 }
